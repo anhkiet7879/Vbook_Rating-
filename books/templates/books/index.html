@@ -1,0 +1,41 @@
+{% extends 'books/base.html' %}
+
+    {% block title %}Home{% endblock %}
+
+    {% block content %}
+        <div class="container mt-4">
+            <h1 class="text-center mb-4">Book Reviews</h1>
+            <!-- Search Form -->
+            <form method="get" class="mb-4">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Search by title, author, or content..." value="{{ query|default:'' }}">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                </div>
+            </form>
+            {% if query %}
+                <p class="mb-3">Search results for: <strong>{{ query }}</strong></p>
+            {% endif %}
+            <div class="row">
+                {% for book in books %}
+                    <div class="col-md-4">
+                        <div class="book-card card">
+                            <a href="{% url 'book_detail' book.id %}">
+                                {% if book.image and book.image.url %}
+                                    <img src="{{ book.image.url }}" class="card-img-top" alt="{{ book.title }}">
+                                {% else %}
+                                    <img src="https://via.placeholder.com/200x200.png?text=No+Image" class="card-img-top" alt="No Image">
+                                {% endif %}
+                            </a>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ book.title }}</h5>
+                                <p class="card-text">{{ book.content|truncatewords:30 }}</p>
+                                <p class="rating">Rating: {{ book.rating }}/5 <i class="fas fa-star"></i></p>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-center">No books found.</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% endblock %}

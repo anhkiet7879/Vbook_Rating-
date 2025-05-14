@@ -1,0 +1,81 @@
+{% extends 'books/base.html' %}
+
+    {% block title %}{{ book.title }}{% endblock %}
+
+    {% block content %}
+        <div class="container mt-4">
+            <div class="card mb-4">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        {% if book.image and book.image.url %}
+                            <img src="{{ book.image.url }}" class="card-img-top img-fluid" alt="{{ book.title }}">
+                        {% else %}
+                            <img src="https://via.placeholder.com/200x300.png?text=No+Image" class="card-img-top img-fluid" alt="No Image">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h1 class="card-title">{{ book.title }}</h1>
+                            <h5 class="card-subtitle mb-2 text-muted">by <a href="{% url 'author_detail' book.author.id %}">{{ book.author.name }}</a></h5>
+                            <p class="card-text">{{ book.content }}</p>
+                            <p class="rating">Average Rating: {{ book.rating }}/5 <i class="fas fa-star"></i></p>
+
+                            <!-- Hiển thị đánh giá -->
+                            <h4>Reviews</h4>
+                            {% for review in book.reviews.all %}
+                                <div class="card mb-2">
+                                    <div class="card-body">
+                                        <p>{{ review.comment }}</p>
+                                        <p class="rating">Rating: {{ review.rating }}/5 <i class="fas fa-star"></i> by {{ review.user.username|default:'Anonymous' }}</p>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <p>No reviews yet.</p>
+                            {% endfor %}
+
+                            <!-- Form thêm đánh giá -->
+                            <h4>Add a Review</h4>
+                            <form method="post" action="{% url 'book_detail' book.id %}">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <textarea class="form-control" name="comment" placeholder="Your review" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="number" class="form-control" name="rating" min="0" max="5" step="0.1" placeholder="Rating (0-5)" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Submit Review</button>
+                            </form>
+
+                            <!-- Form chỉnh sửa sách -->
+                            {% if edit_mode %}
+                                <h4>Edit Book</h4>
+                                <form method="post" enctype="multipart/form-data" action="{% url 'edit_book' book.id %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Title</label>
+                                        <input type="text" class="form-control" name="title" value="{{ book.title }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Content</label>
+                                        <textarea class="form-control" name="content" required>{{ book.content }}</textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Rating</label>
+                                        <input type="number" class="form-control" name="rating" min="0" max="5" step="0.1" value="{{ book.rating }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Image</label>
+                                        <input type="file" class="form-control" name="image">
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Save Changes</button>
+                                    <a href="{% url 'book_detail' book.id %}" class="btn btn-secondary">Cancel</a>
+                                </form>
+                            {% else %}
+                                <a href="{% url 'edit_book' book.id %}" class="btn btn-warning mt-3">Edit Book</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endblock %}
