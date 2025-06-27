@@ -29,16 +29,16 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
+                        <a class="nav-link" href="{% url 'home' %}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">My Books</a>
+                        <a class="nav-link" href="{% url 'book_list' %}">Books</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Browse</a>
+                        <a class="nav-link" href="{% url 'author_list' %}">Authors</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Community</a>
+                        <a class="nav-link" href="{% url 'about' %}">About</a>
                     </li>
                 </ul>
                 <form class="d-flex me-3">
@@ -46,8 +46,15 @@
                     <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search"></i></button>
                 </form>
                 <div>
-                    <a href="#" class="btn btn-outline-primary me-2">Sign In</a>
-                    <a href="#" class="btn btn-primary">Join</a>
+                    {% if user.is_authenticated %}
+                        <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-primary me-2">Logout</button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-primary me-2">Sign In</a>
+                        <a href="{% url 'register' %}" class="btn btn-primary">Join</a>
+                    {% endif %}
                 </div>
             </div>
         </div>

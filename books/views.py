@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import Book, Review, Author
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 
@@ -79,3 +79,19 @@ def register(request):
     else:
         form = UserCreationForm()
     return render(request, 'books/register.html', {'form': form})
+
+def logout_view(request):
+    logout(request)
+    return redirect('/')
+
+def home(request):
+    return render(request, 'home.html')
+
+def book_list(request):
+    return render(request, 'book_list.html')
+
+def author_list(request):
+    return render(request, 'author_list.html')
+
+def about(request):
+    return render(request, 'about.html')
