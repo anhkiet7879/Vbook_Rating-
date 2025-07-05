@@ -1,0 +1,180 @@
+{% extends 'books/base.html' %}
+
+{% block title %}Sách Phổ biến - Vbook Rating{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">
+                <i class="fas fa-fire text-warning"></i> Sách Phổ biến
+            </h1>
+            <p class="text-center text-muted mb-5">Những cuốn sách được đánh giá cao nhất từ cộng đồng</p>
+            
+            {% if books %}
+                <div class="row">
+                    {% for book in books %}
+                        <div class="col-md-3 col-lg-2 mb-4">
+                            <div class="book-card card h-100">
+                                <a href="{% url 'book_detail' book.id %}">
+                                    {% if book.image and book.image.url %}
+                                        <img src="{{ book.image.url }}" class="card-img-top" alt="{{ book.title }}" style="height: 280px; object-fit: cover;">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/200x280.png?text=No+Image" class="card-img-top" alt="No Image" style="height: 280px; object-fit: cover;">
+                                    {% endif %}
+                                </a>
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title">{{ book.title }}</h5>
+                                    <p class="card-text flex-grow-1">{{ book.content|truncatewords:30 }}</p>
+                                    <p class="rating mb-2">Rating: {{ book.rating }}/5 <i class="fas fa-star text-warning"></i></p>
+                                    <p class="text-muted small mb-2">By: {{ book.author.name }}</p>
+                                    {% if book.genre %}
+                                        <p class="text-muted small mb-2">
+                                            <i class="{{ book.genre.icon }}"></i> 
+                                            <a href="{% url 'genre_detail' book.genre.id %}" class="text-decoration-none">
+                                                {{ book.genre.name }}
+                                            </a>
+                                        </p>
+                                    {% endif %}
+                                    
+                                    {% if user.is_authenticated %}
+                                        <div class="want-to-read-section">
+                                            {% if book.is_in_want_to_read %}
+                                                <form method="post" action="{% url 'remove_from_want_to_read' book.id %}" class="d-inline want-to-read-form" data-book-id="{{ book.id }}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                        <i class="fas fa-heart"></i> Remove from Want to Read
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" action="{% url 'add_to_want_to_read' book.id %}" class="d-inline want-to-read-form" data-book-id="{{ book.id }}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                                                        <i class="far fa-heart"></i> Want to Read
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm">
+                                            <i class="far fa-heart"></i> Want to Read (Login Required)
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center">
+                    <div class="empty-state">
+                        <i class="fas fa-fire fa-4x text-muted mb-3"></i>
+                        <h3 class="text-muted">Chưa có sách phổ biến</h3>
+                        <p class="text-muted">Hãy đánh giá sách để tạo danh sách phổ biến!</p>
+                        <a href="{% url 'index' %}" class="btn btn-primary">
+                            <i class="fas fa-book"></i> Xem tất cả sách
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="wantToReadToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-heart text-primary me-2"></i>
+            <strong class="me-auto">Want to Read</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            <!-- Message will be inserted here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const wantToReadForms = document.querySelectorAll('.want-to-read-form');
+        const toast = new bootstrap.Toast(document.getElementById('wantToReadToast'));
+        const toastMessage = document.getElementById('toastMessage');
+
+        wantToReadForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const bookId = this.dataset.bookId;
+                const isRemove = this.action.includes('remove');
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update button
+                        const button = this.querySelector('button');
+                        
+                        if (isRemove) {
+                            // Change to "Want to Read" button
+                            this.action = this.action.replace('remove-from-want-to-read', 'add-to-want-to-read');
+                            button.className = 'btn btn-outline-primary btn-sm';
+                            button.innerHTML = '<i class="far fa-heart"></i> Want to Read';
+                            this.dataset.bookId = bookId;
+                        } else {
+                            // Change to "Remove" button
+                            this.action = this.action.replace('add-to-want-to-read', 'remove-from-want-to-read');
+                            button.className = 'btn btn-outline-danger btn-sm';
+                            button.innerHTML = '<i class="fas fa-heart"></i> Remove from Want to Read';
+                            this.dataset.bookId = bookId;
+                        }
+                        
+                        // Show toast message
+                        toastMessage.textContent = data.message;
+                        toast.show();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    toastMessage.textContent = 'An error occurred. Please try again.';
+                    toast.show();
+                });
+            });
+        });
+    });
+</script>
+
+<style>
+.book-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.card-img-top {
+    transition: opacity 0.2s ease-in-out;
+}
+
+.book-card:hover .card-img-top {
+    opacity: 0.9;
+}
+
+.empty-state {
+    padding: 60px 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    margin: 40px 0;
+    border: 2px dashed #dee2e6;
+}
+</style>
+{% endblock %} 

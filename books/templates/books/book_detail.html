@@ -17,8 +17,55 @@
                         <div class="card-body">
                             <h1 class="card-title">{{ book.title }}</h1>
                             <h5 class="card-subtitle mb-2 text-muted">by <a href="{% url 'author_detail' book.author.id %}">{{ book.author.name }}</a></h5>
-                            <p class="card-text">{{ book.content }}</p>
-                            <p class="rating">Average Rating: {{ book.rating }}/5 <i class="fas fa-star"></i></p>
+                            {% if book.genre %}
+                                <p class="mb-2">
+                                    <span class="badge bg-{{ book.genre.color }}">
+                                        <i class="{{ book.genre.icon }}"></i> 
+                                        <a href="{% url 'genre_detail' book.genre.id %}" class="text-white text-decoration-none">
+                                            {{ book.genre.name }}
+                                        </a>
+                                    </span>
+                                </p>
+                            {% endif %}
+                            <div id="book-content-wrapper">
+                                {% with book.content|striptags|wordcount as word_count %}
+                                    {% if word_count > 200 %}
+                                        <p class="card-text book-content-short" id="bookContentShort">{{ book.content|truncatewords:200|linebreaksbr }}</p>
+                                        <p class="card-text book-content-full d-none" id="bookContentFull">{{ book.content|linebreaksbr }}</p>
+                                        <button class="btn btn-link p-0 mt-1" id="toggleContentBtn" style="font-size:0.95rem;">Xem thêm</button>
+                                    {% else %}
+                                        <p class="card-text">{{ book.content|linebreaksbr }}</p>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                            <p class="rating">Average Rating: {{ book.rating }}/5 <i class="fas fa-star text-warning"></i></p>
+                            
+                            <!-- Want to Read Button -->
+                            {% if user.is_authenticated %}
+                                <div class="mb-3">
+                                    {% if book.is_in_want_to_read %}
+                                        <form method="post" action="{% url 'remove_from_want_to_read' book.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-danger">
+                                                <i class="fas fa-heart"></i> Remove from Want to Read
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <form method="post" action="{% url 'add_to_want_to_read' book.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-primary">
+                                                <i class="far fa-heart"></i> Want to Read
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="mb-3">
+                                    <a href="{% url 'login' %}" class="btn btn-outline-primary">
+                                        <i class="far fa-heart"></i> Want to Read (Login Required)
+                                    </a>
+                                </div>
+                            {% endif %}
 
                             <!-- Hiển thị đánh giá -->
                             <h4>Reviews</h4>
@@ -79,3 +126,44 @@
             </div>
         </div>
     {% endblock %}
+
+<style>
+.book-content-short {
+    max-height: 120px;
+    overflow: hidden;
+    position: relative;
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    white-space: pre-line;
+    transition: max-height 0.3s;
+}
+.book-content-full {
+    white-space: pre-line;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const shortContent = document.getElementById('bookContentShort');
+    const fullContent = document.getElementById('bookContentFull');
+    const toggleBtn = document.getElementById('toggleContentBtn');
+    let expanded = false;
+    if (shortContent && fullContent && toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            expanded = !expanded;
+            if (expanded) {
+                shortContent.classList.add('d-none');
+                fullContent.classList.remove('d-none');
+                toggleBtn.textContent = 'Thu gọn';
+            } else {
+                shortContent.classList.remove('d-none');
+                fullContent.classList.add('d-none');
+                toggleBtn.textContent = 'Xem thêm';
+            }
+        });
+    }
+});
+</script>

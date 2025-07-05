@@ -1,0 +1,82 @@
+{% extends 'books/base.html' %}
+
+{% block title %}Thể loại - Vbook Rating{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">
+                <i class="fas fa-tags text-primary"></i> Thể loại Sách
+            </h1>
+            
+            {% if genres %}
+                <div class="row">
+                    {% for genre in genres %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 genre-card">
+                                <div class="card-body text-center">
+                                    <div class="genre-icon mb-3">
+                                        <i class="{{ genre.icon }} fa-3x text-{{ genre.color }}"></i>
+                                    </div>
+                                    <h4 class="card-title">{{ genre.name }}</h4>
+                                    <p class="card-text text-muted">{{ genre.description|default:"Không có mô tả" }}</p>
+                                    <div class="genre-stats mb-3">
+                                        <span class="badge bg-{{ genre.color }}">
+                                            <i class="fas fa-book"></i> {{ genre.book_count }} sách
+                                        </span>
+                                    </div>
+                                    <a href="{% url 'genre_detail' genre.id %}" class="btn btn-outline-{{ genre.color }}">
+                                        <i class="fas fa-eye"></i> Xem sách
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center">
+                    <div class="empty-state">
+                        <i class="fas fa-tags fa-4x text-muted mb-3"></i>
+                        <h3 class="text-muted">Chưa có thể loại nào</h3>
+                        <p class="text-muted">Hãy thêm thể loại trong admin panel!</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.genre-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.genre-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.genre-icon {
+    transition: transform 0.3s ease;
+}
+
+.genre-card:hover .genre-icon {
+    transform: scale(1.1);
+}
+
+.genre-stats .badge {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.empty-state {
+    padding: 60px 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    margin: 40px 0;
+    border: 2px dashed #dee2e6;
+}
+</style>
+{% endblock %} 

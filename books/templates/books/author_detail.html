@@ -1,33 +1,210 @@
 {% extends 'books/base.html' %}
 
-{% block title %}{{ author.name }}{% endblock %}
+{% block title %}{{ author.name }} - Tác giả{% endblock %}
 
 {% block content %}
-    <div class="container mt-4">
-        <h1 class="text-center mb-4">{{ author.name }}</h1>
-        <h4>Books by {{ author.name }}</h4>
-        <div class="row">
-            {% for book in books %}
-                <div class="col-md-4">
-                    <div class="book-card card">
-                        <a href="{% url 'book_detail' book.id %}">
-                            {% if book.image %}
-                                <img src="{{ book.image.url }}" class="card-img-top" alt="{{ book.title }}">
-                            {% else %}
-                                <img src="https://via.placeholder.com/200x200.png?text=No+Image" class="card-img-top" alt="No Image">
-                            {% endif %}
-                        </a>
-                        <div class="card-body">
-                            <h5 class="card-title">{{ book.title }}</h5>
-                            <p class="card-text">{{ book.content|truncatewords:30 }}</p>
-                            <p class="rating">Rating: {{ book.rating }}/5 <i class="fas fa-star"></i></p>
+<!-- Author Hero Section -->
+<div class="author-hero">
+    <div class="container">
+        <div class="author-profile">
+            <div class="author-avatar-large">
+                {% if author.image %}
+                    <img src="{{ author.image.url }}" alt="{{ author.name }}" class="author-image-large">
+                {% else %}
+                    <i class="fas fa-user-circle"></i>
+                {% endif %}
+            </div>
+            <div class="author-details">
+                <h1 class="author-name-large">{{ author.name }}</h1>
+                {% if author.nationality %}
+                    <p class="author-nationality">
+                        <i class="fas fa-globe"></i> {{ author.nationality }}
+                    </p>
+                {% endif %}
+                {% if author.birth_date %}
+                    <p class="author-birth">
+                        <i class="fas fa-birthday-cake"></i> {{ author.birth_date|date:"d/m/Y" }}
+                    </p>
+                {% endif %}
+                {% if author.bio %}
+                    <p class="author-bio">{{ author.bio|truncatewords:50 }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Books Section -->
+<div class="books-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Sách của {{ author.name }}</h2>
+            <p class="section-subtitle">{{ books.count }} cuốn sách được xuất bản</p>
+        </div>
+        
+        {% if books %}
+            <div class="books-grid">
+                {% for book in books %}
+                    <div class="book-item">
+                        <div class="book-card">
+                            <div class="book-image-container">
+                                <a href="{% url 'book_detail' book.id %}">
+                                    {% if book.image %}
+                                        <img src="{{ book.image.url }}" class="book-image" alt="{{ book.title }}">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/300x400.png?text=No+Image" class="book-image" alt="No Image">
+                                    {% endif %}
+                                </a>
+                                <div class="book-overlay">
+                                    <a href="{% url 'book_detail' book.id %}" class="view-details-btn">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div class="book-info">
+                                <h3 class="book-title">
+                                    <a href="{% url 'book_detail' book.id %}">{{ book.title }}</a>
+                                </h3>
+                                
+                                <div class="book-meta">
+                                    <div class="rating-container">
+                                        <div class="stars">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= book.rating %}
+                                                    <i class="fas fa-star star-filled"></i>
+                                                {% else %}
+                                                    <i class="far fa-star star-empty"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <span class="rating-text">{{ book.rating }}/5</span>
+                                    </div>
+                                    
+                                    {% if book.genre %}
+                                        <p class="book-genre">
+                                            <i class="fas fa-tag"></i> 
+                                            <a href="{% url 'genre_detail' book.genre.id %}">{{ book.genre.name }}</a>
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if user.is_authenticated %}
+                                    <div class="book-actions">
+                                        {% if book.is_in_want_to_read %}
+                                            <form method="post" action="{% url 'remove_from_want_to_read' book.id %}" class="want-to-read-form" data-book-id="{{ book.id }}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="action-btn remove-btn">
+                                                    <i class="fas fa-heart"></i> Remove
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <form method="post" action="{% url 'add_to_want_to_read' book.id %}" class="want-to-read-form" data-book-id="{{ book.id }}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="action-btn add-btn">
+                                                    <i class="far fa-heart"></i> Want to Read
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <div class="book-actions">
+                                        <a href="{% url 'login' %}" class="action-btn login-btn">
+                                            <i class="far fa-heart"></i> Login to Save
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-book-open"></i>
                 </div>
-            {% empty %}
-                <p class="text-center">No books by this author.</p>
-            {% endfor %}
+                <h3>Chưa có sách nào</h3>
+                <p>Tác giả này chưa có sách nào trong hệ thống</p>
+            </div>
+        {% endif %}
+        
+        <div class="section-footer">
+            <a href="{% url 'index' %}" class="view-all-btn">
+                <i class="fas fa-arrow-left"></i> Về trang chủ
+            </a>
         </div>
-        <a href="{% url 'index' %}" class="btn btn-primary mt-3">Back to Home</a>
     </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="wantToReadToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-heart text-primary me-2"></i>
+            <strong class="me-auto">Want to Read</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            <!-- Message will be inserted here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const wantToReadForms = document.querySelectorAll('.want-to-read-form');
+        const toast = new bootstrap.Toast(document.getElementById('wantToReadToast'));
+        const toastMessage = document.getElementById('toastMessage');
+
+        wantToReadForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const bookId = this.dataset.bookId;
+                const isRemove = this.action.includes('remove');
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update button
+                        const button = this.querySelector('button');
+                        const bookActions = this.closest('.book-actions');
+                        
+                        if (isRemove) {
+                            // Change to "Want to Read" button
+                            this.action = this.action.replace('remove-from-want-to-read', 'add-to-want-to-read');
+                            button.className = 'action-btn add-btn';
+                            button.innerHTML = '<i class="far fa-heart"></i> Want to Read';
+                            this.dataset.bookId = bookId;
+                        } else {
+                            // Change to "Remove" button
+                            this.action = this.action.replace('add-to-want-to-read', 'remove-from-want-to-read');
+                            button.className = 'action-btn remove-btn';
+                            button.innerHTML = '<i class="fas fa-heart"></i> Remove';
+                            this.dataset.bookId = bookId;
+                        }
+                        
+                        // Show toast message
+                        toastMessage.textContent = data.message;
+                        toast.show();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    toastMessage.textContent = 'An error occurred. Please try again.';
+                    toast.show();
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}

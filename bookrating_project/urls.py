@@ -14,6 +14,17 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),  # Thêm URL cho authentication
     path('accounts/register/', views.register, name='register'),  # URL cho đăng ký
     path('accounts/logout/', auth_views.LogoutView.as_view(next_page='/accounts/login/'), name='logout'),
+    # Want to Read URLs
+    path('book/<int:book_id>/add-to-want-to-read/', views.add_to_want_to_read, name='add_to_want_to_read'),
+    path('book/<int:book_id>/remove-from-want-to-read/', views.remove_from_want_to_read, name='remove_from_want_to_read'),
+    path('my-books/', views.my_books, name='my_books'),
+    path('about/', views.about, name='about'),
+    # Browse URLs
+    path('authors/', views.author_list, name='author_list'),
+    path('genres/', views.genres, name='genres'),
+    path('genre/<int:genre_id>/', views.genre_detail, name='genre_detail'),
+    path('popular/', views.popular_books, name='popular_books'),
+    path('new/', views.new_books, name='new_books'),
 ]
 
 if settings.DEBUG:

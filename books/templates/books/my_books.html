@@ -1,0 +1,91 @@
+{% extends 'books/base.html' %}
+
+{% block title %}My Books - Want to Read{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">
+                <i class="fas fa-bookmark text-primary"></i> My Books - Want to Read
+            </h1>
+            
+            {% if want_to_read_books %}
+                <div class="row">
+                    {% for want_to_read in want_to_read_books %}
+                        <div class="col-md-3 col-lg-2 mb-4">
+                            <div class="book-card card h-100">
+                                <a href="{% url 'book_detail' want_to_read.book.id %}">
+                                    {% if want_to_read.book.image and want_to_read.book.image.url %}
+                                        <img src="{{ want_to_read.book.image.url }}" class="card-img-top" alt="{{ want_to_read.book.title }}" style="height: 280px; object-fit: cover;">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/200x280.png?text=No+Image" class="card-img-top" alt="No Image" style="height: 280px; object-fit: cover;">
+                                    {% endif %}
+                                </a>
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title">{{ want_to_read.book.title }}</h5>
+                                    <p class="card-text flex-grow-1">{{ want_to_read.book.content|truncatewords:30 }}</p>
+                                    <p class="rating mb-2">Rating: {{ want_to_read.book.rating }}/5 <i class="fas fa-star text-warning"></i></p>
+                                    <p class="text-muted small mb-2">By: {{ want_to_read.book.author.name }}</p>
+                                    <p class="text-muted small mb-2">
+                                        <i class="fas fa-calendar-plus"></i> Added: {{ want_to_read.added_at|date:"M d, Y" }}
+                                    </p>
+                                    
+                                    <div class="mt-auto">
+                                        <form method="post" action="{% url 'remove_from_want_to_read' want_to_read.book.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                <i class="fas fa-heart"></i> Remove from List
+                                            </button>
+                                        </form>
+                                        <a href="{% url 'book_detail' want_to_read.book.id %}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center">
+                    <div class="empty-state">
+                        <i class="far fa-heart fa-4x text-muted mb-3"></i>
+                        <h3 class="text-muted">Your Want to Read list is empty</h3>
+                        <p class="text-muted">Start adding books to your reading list!</p>
+                        <a href="{% url 'index' %}" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Browse Books
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.empty-state {
+    padding: 60px 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    margin: 40px 0;
+}
+
+.book-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.card-img-top {
+    transition: opacity 0.2s ease-in-out;
+}
+
+.book-card:hover .card-img-top {
+    opacity: 0.9;
+}
+</style>
+{% endblock %} 

@@ -1,10 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Book, Review, Author
+from .models import Book, Review, Author, WantToRead, Genre
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, Count, Avg
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
+from django.http import JsonResponse
+from datetime import datetime, timedelta
 
 def index(request):
     books = Book.objects.all().order_by('-created_at')
@@ -15,11 +17,46 @@ def index(request):
             Q(author__name__icontains=query) |
             Q(content__icontains=query)
         ).distinct()
-    return render(request, 'books/index.html', {'books': books, 'query': query})
+    
+    # Kiểm tra xem user đã đăng nhập và đã thêm sách nào vào want to read chưa
+    if request.user.is_authenticated:
+        want_to_read_books = WantToRead.objects.filter(user=request.user).values_list('book_id', flat=True)
+        for book in books:
+            book.is_in_want_to_read = book.id in want_to_read_books
+    else:
+        for book in books:
+            book.is_in_want_to_read = False
+    
+    # Lấy tác giả nổi bật (có nhiều sách nhất và rating cao)
+    featured_authors = Author.objects.annotate(
+        book_count=Count('books'),
+        avg_rating=Avg('books__rating')
+    ).filter(
+        book_count__gte=1
+    ).order_by('-book_count', '-avg_rating')[:6]
+    
+    # Lấy thể loại nổi bật (có nhiều sách nhất)
+    featured_genres = Genre.objects.annotate(
+        book_count=Count('books')
+    ).filter(
+        book_count__gte=1
+    ).order_by('-book_count')[:8]
+    
+    context = {
+        'books': books, 
+        'query': query,
+        'featured_authors': featured_authors,
+        'featured_genres': featured_genres
+    }
+    
+    return render(request, 'books/index.html', context)
 
 @login_required
 def book_detail(request, book_id):
     book = get_object_or_404(Book, pk=book_id)
+    
+    # Kiểm tra xem user đã thêm sách này vào want to read chưa
+    book.is_in_want_to_read = WantToRead.objects.filter(user=request.user, book=book).exists()
     
     if request.method == 'POST':
         if 'comment' in request.POST:
@@ -64,6 +101,16 @@ def edit_book(request, book_id):
 def author_detail(request, author_id):
     author = get_object_or_404(Author, pk=author_id)
     books = author.books.all()
+    
+    # Kiểm tra want to read cho mỗi sách
+    if request.user.is_authenticated:
+        want_to_read_books = WantToRead.objects.filter(user=request.user).values_list('book_id', flat=True)
+        for book in books:
+            book.is_in_want_to_read = book.id in want_to_read_books
+    else:
+        for book in books:
+            book.is_in_want_to_read = False
+    
     return render(request, 'books/author_detail.html', {'author': author, 'books': books})
 
 def register(request):
@@ -91,7 +138,123 @@ def book_list(request):
     return render(request, 'book_list.html')
 
 def author_list(request):
-    return render(request, 'author_list.html')
+    # Lấy danh sách tất cả tác giả với số lượng sách
+    authors = Author.objects.annotate(book_count=Count('books')).order_by('-book_count')
+    
+    # Thêm thông tin về rating trung bình của tác giả
+    for author in authors:
+        author.avg_rating = author.books.aggregate(Avg('rating'))['rating__avg'] or 0.0
+        author.avg_rating = round(author.avg_rating, 1)
+    
+    return render(request, 'books/author_list.html', {'authors': authors})
+
+def genres(request):
+    # Lấy danh sách thể loại từ database
+    genres_list = Genre.objects.annotate(book_count=Count('books')).order_by('-book_count')
+    
+    return render(request, 'books/genres.html', {'genres': genres_list})
+
+def genre_detail(request, genre_id):
+    genre = get_object_or_404(Genre, pk=genre_id)
+    books = genre.books.all()
+    
+    # Kiểm tra want to read cho mỗi sách
+    if request.user.is_authenticated:
+        want_to_read_books = WantToRead.objects.filter(user=request.user).values_list('book_id', flat=True)
+        for book in books:
+            book.is_in_want_to_read = book.id in want_to_read_books
+    else:
+        for book in books:
+            book.is_in_want_to_read = False
+    
+    return render(request, 'books/genre_detail.html', {'genre': genre, 'books': books})
+
+def popular_books(request):
+    # Lấy sách phổ biến dựa trên rating và số lượng review
+    popular_books = Book.objects.annotate(
+        review_count=Count('reviews')
+    ).filter(
+        rating__gte=3.0,
+        review_count__gte=1
+    ).order_by('-rating', '-review_count')[:12]
+    
+    # Kiểm tra want to read cho mỗi sách
+    if request.user.is_authenticated:
+        want_to_read_books = WantToRead.objects.filter(user=request.user).values_list('book_id', flat=True)
+        for book in popular_books:
+            book.is_in_want_to_read = book.id in want_to_read_books
+    else:
+        for book in popular_books:
+            book.is_in_want_to_read = False
+    
+    return render(request, 'books/popular.html', {'books': popular_books})
+
+def new_books(request):
+    # Lấy sách mới (thêm trong 30 ngày gần đây)
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    new_books = Book.objects.filter(created_at__gte=thirty_days_ago).order_by('-created_at')
+    
+    # Kiểm tra want to read cho mỗi sách
+    if request.user.is_authenticated:
+        want_to_read_books = WantToRead.objects.filter(user=request.user).values_list('book_id', flat=True)
+        for book in new_books:
+            book.is_in_want_to_read = book.id in want_to_read_books
+    else:
+        for book in new_books:
+            book.is_in_want_to_read = False
+    
+    return render(request, 'books/new_books.html', {'books': new_books})
 
 def about(request):
-    return render(request, 'about.html')
+    return render(request, 'books/about.html')
+
+@login_required
+def add_to_want_to_read(request, book_id):
+    if request.method == 'POST':
+        book = get_object_or_404(Book, pk=book_id)
+        want_to_read, created = WantToRead.objects.get_or_create(user=request.user, book=book)
+        
+        if created:
+            messages.success(request, f'"{book.title}" has been added to your Want to Read list!')
+        else:
+            messages.info(request, f'"{book.title}" is already in your Want to Read list!')
+        
+        # Nếu request là AJAX, trả về JSON response
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'"{book.title}" has been added to your Want to Read list!' if created else f'"{book.title}" is already in your Want to Read list!',
+                'is_in_list': True
+            })
+        
+        return redirect('index')
+    
+    return redirect('index')
+
+@login_required
+def remove_from_want_to_read(request, book_id):
+    if request.method == 'POST':
+        book = get_object_or_404(Book, pk=book_id)
+        try:
+            want_to_read = WantToRead.objects.get(user=request.user, book=book)
+            want_to_read.delete()
+            messages.success(request, f'"{book.title}" has been removed from your Want to Read list!')
+            
+            # Nếu request là AJAX, trả về JSON response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': f'"{book.title}" has been removed from your Want to Read list!',
+                    'is_in_list': False
+                })
+        except WantToRead.DoesNotExist:
+            messages.error(request, f'"{book.title}" was not in your Want to Read list!')
+        
+        return redirect('index')
+    
+    return redirect('index')
+
+@login_required
+def my_books(request):
+    want_to_read_books = WantToRead.objects.filter(user=request.user).select_related('book', 'book__author').order_by('-added_at')
+    return render(request, 'books/my_books.html', {'want_to_read_books': want_to_read_books})
