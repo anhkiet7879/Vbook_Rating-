@@ -14,6 +14,8 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),  # Thêm URL cho authentication
     path('accounts/register/', views.register, name='register'),  # URL cho đăng ký
     path('accounts/logout/', auth_views.LogoutView.as_view(next_page='/accounts/login/'), name='logout'),
+    path('review/<int:review_id>/like/', views.like_review, name='like_review'),
+    path('review/<int:review_id>/reply/', views.reply_review, name='reply_review'),
     # Want to Read URLs
     path('book/<int:book_id>/add-to-want-to-read/', views.add_to_want_to_read, name='add_to_want_to_read'),
     path('book/<int:book_id>/remove-from-want-to-read/', views.remove_from_want_to_read, name='remove_from_want_to_read'),
