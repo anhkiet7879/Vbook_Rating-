@@ -7,7 +7,7 @@ from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('book/<int:book_id>/', views.book_detail, name='book_detail'),
+    path('books/<int:book_id>/', views.book_detail, name='book_detail'),
     path('book/<int:book_id>/edit/', views.edit_book, name='edit_book'),
     path('admin/', admin.site.urls),
     path('author/<int:author_id>/', views.author_detail, name='author_detail'),
@@ -27,6 +27,7 @@ urlpatterns = [
     path('genre/<int:genre_id>/', views.genre_detail, name='genre_detail'),
     path('popular/', views.popular_books, name='popular_books'),
     path('new/', views.new_books, name='new_books'),
+    path('notifications/', views.notifications, name='notifications'),
 ]
 
 if settings.DEBUG:

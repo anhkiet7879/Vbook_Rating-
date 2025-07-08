@@ -93,3 +93,13 @@ class ReviewLike(models.Model):
         user_str = self.user.username if hasattr(self.user, "username") else str(self.user)
         review_id = self.review.id if hasattr(self.review, "id") else str(self.review)
         return f"{user_str} liked review {review_id}"
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    message = models.CharField(max_length=255)
+    url = models.CharField(max_length=255, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification for {self.user.username}: {self.message}"

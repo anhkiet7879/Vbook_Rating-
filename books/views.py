@@ -11,6 +11,8 @@ from django.views.decorators.http import require_POST
 from .models import Review, ReviewLike
 import json
 from .models import Review, Reply
+from django.contrib.auth.models import User
+from .models import Notification
 
 def index(request):
     books = Book.objects.all().order_by('-created_at')
@@ -306,6 +308,13 @@ def reply_review(request, review_id):
         user=request.user,
         content=reply_text
     )
+    # Tạo notification cho chủ review (nếu không phải tự trả lời mình)
+    if review.user != request.user:
+        Notification.objects.create(
+            user=review.user,
+            message=f"{request.user.username} đã bình luận vào đánh giá của bạn.",
+            url=f"/book/{review.book.id}/#review-{review.id}"
+        )
     # Trả về JSON nếu là AJAX
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
@@ -318,3 +327,9 @@ def reply_review(request, review_id):
             }
         })
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+@login_required
+def notifications(request):
+    notifications = request.user.notifications.order_by('-created_at')
+    notifications.update(is_read=True)  # Đánh dấu đã đọc khi vào trang
+    return render(request, 'books/notifications.html', {'notifications': notifications})

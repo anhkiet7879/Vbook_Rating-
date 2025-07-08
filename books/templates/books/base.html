@@ -61,6 +61,12 @@
                 <div>
                     {% if user.is_authenticated %}
                         <span class="navbar-text me-2">Hello, {{ user.username }}!</span>
+                        <a href="{% url 'notifications' %}" class="btn btn-outline-info btn-sm ms-2">
+                            <i class="fas fa-bell"></i> Notifications
+                            {% if unread_count and unread_count > 0 %}
+                                <span class="badge bg-danger">{{ unread_count }}</span>
+                            {% endif %}
+                        </a>
                         <form method="post" action="{% url 'logout' %}" style="display: inline;">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-outline-primary">Logout</button>

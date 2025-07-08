@@ -72,7 +72,7 @@
                             <!-- Hiển thị đánh giá -->
                             <h4>Reviews</h4>
                             {% for review in book.reviews.all %}
-                                <div class="card mb-2">
+                                <div class="card mb-2" id="review-{{ review.id }}">
                                     <div class="card-body">
                                         <p>{{ review.comment }}</p>
                                         <p class="rating">
@@ -91,7 +91,7 @@
                                         {% if review.replies.all %}
                                             <div class="ms-4 mt-2" id="replies-{{ review.id }}">
                                                 {% for reply in review.replies.all %}
-                                                    <div class="border rounded p-2 mb-1 bg-light">
+                                                    <div class="border rounded p-2 mb-1 bg-light" id="reply-{{ reply.id }}">
                                                         <strong>{{ reply.user.username|default:'Anonymous' }}</strong>: {{ reply.content }}
                                                         <span class="text-muted" style="font-size:0.85em;">({{ reply.created_at|date:"Y-m-d H:i" }})</span>
                                                     </div>
@@ -178,6 +178,9 @@
     max-height: none !important;
     overflow: visible !important;
     display: block !important;
+}
+.bg-warning {
+    transition: background 0.5s;
 }
 </style>
 {% block script %}
@@ -289,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Thêm reply mới vào danh sách reply
                     const repliesDiv = document.getElementById('replies-' + reviewId);
                     const replyHtml = `
-                        <div class="border rounded p-2 mb-1 bg-light">
+                        <div class="border rounded p-2 mb-1 bg-light" id="reply-${data.reply.id}">
                             <strong>${data.reply.user}</strong>: ${data.reply.content}
                             <span class="text-muted" style="font-size:0.85em;">(${data.reply.created_at})</span>
                         </div>
